@@ -1,0 +1,182 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Prompt Book - WERK</title>
+  <style>
+    :root {
+      color-scheme: light dark;
+      --bg: #f5f7fb;
+      --card: #ffffff;
+      --text: #172033;
+      --muted: #5c667a;
+      --accent: #2563eb;
+      --border: #d8deea;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #101624;
+        --card: #172033;
+        --text: #f4f7fb;
+        --muted: #b4bed0;
+        --accent: #7aa2ff;
+        --border: #2c374d;
+      }
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: "Segoe UI", system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.5;
+    }
+    main {
+      width: min(1080px, calc(100% - 32px));
+      margin: 48px auto;
+    }
+    header {
+      margin-bottom: 28px;
+    }
+    h1 {
+      margin: 0 0 8px;
+      font-size: clamp(2rem, 5vw, 4rem);
+      letter-spacing: -0.04em;
+    }
+    .lede {
+      margin: 0;
+      color: var(--muted);
+      font-size: 1.1rem;
+      max-width: 760px;
+    }
+    .toolbar {
+      display: flex;
+      gap: 12px;
+      margin: 24px 0;
+      flex-wrap: wrap;
+    }
+    input, select, button {
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 10px 12px;
+      font: inherit;
+      background: var(--card);
+      color: var(--text);
+    }
+    input {
+      flex: 1 1 320px;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 16px;
+    }
+    article {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 20px;
+      box-shadow: 0 14px 40px rgb(15 23 42 / 8%);
+    }
+    article h2 {
+      margin: 0 0 8px;
+      font-size: 1.25rem;
+    }
+    .meta {
+      color: var(--muted);
+      font-size: 0.9rem;
+      margin-bottom: 16px;
+    }
+    pre {
+      white-space: pre-wrap;
+      background: color-mix(in srgb, var(--accent) 8%, transparent);
+      border-radius: 14px;
+      padding: 14px;
+      min-height: 128px;
+    }
+    button {
+      cursor: pointer;
+      background: var(--accent);
+      color: white;
+      border: 0;
+    }
+    a {
+      color: var(--accent);
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <header>
+      <h1>Prompt Book - WERK</h1>
+      <p class="lede">A lightweight test artifact that shows how shared WERK prompts can be published as a searchable team-facing catalog.</p>
+    </header>
+
+    <div class="toolbar" aria-label="Prompt filters">
+      <input id="search" type="search" placeholder="Search prompts" aria-label="Search prompts">
+      <select id="category" aria-label="Filter by category">
+        <option value="all">All categories</option>
+        <option value="meetings">Meetings</option>
+        <option value="partners">Partners</option>
+      </select>
+    </div>
+
+    <section id="prompts" class="grid" aria-live="polite"></section>
+  </main>
+
+  <script>
+    const prompts = [
+      {
+        title: "Meeting follow-up",
+        category: "meetings",
+        source: "prompts/meeting-follow-up.md",
+        text: "Summarize the meeting notes below into decisions, open questions, and owner-based actions. Keep the tone direct and useful for a business audience."
+      },
+      {
+        title: "Partner briefing",
+        category: "partners",
+        source: "prompts/partner-briefing.md",
+        text: "Create a partner briefing with context, current opportunities, known risks, suggested talking points, and three recommended next actions."
+      }
+    ];
+
+    const list = document.querySelector("#prompts");
+    const search = document.querySelector("#search");
+    const category = document.querySelector("#category");
+
+    function render() {
+      const query = search.value.trim().toLowerCase();
+      const selectedCategory = category.value;
+      const filtered = prompts.filter((prompt) => {
+        const matchesCategory = selectedCategory === "all" || prompt.category === selectedCategory;
+        const matchesQuery = !query || `${prompt.title} ${prompt.text}`.toLowerCase().includes(query);
+        return matchesCategory && matchesQuery;
+      });
+
+      list.innerHTML = filtered.map((prompt, index) => `
+        <article>
+          <h2>${prompt.title}</h2>
+          <div class="meta">${prompt.category} · <a href="${prompt.source}">source prompt</a></div>
+          <pre>${prompt.text}</pre>
+          <button type="button" data-index="${index}">Copy prompt</button>
+        </article>
+      `).join("") || "<p>No prompts found.</p>";
+    }
+
+    list.addEventListener("click", async (event) => {
+      const button = event.target.closest("button[data-index]");
+      if (!button) return;
+      const prompt = prompts[Number(button.dataset.index)];
+      await navigator.clipboard.writeText(prompt.text);
+      button.textContent = "Copied";
+      setTimeout(() => { button.textContent = "Copy prompt"; }, 1200);
+    });
+
+    search.addEventListener("input", render);
+    category.addEventListener("change", render);
+    render();
+  </script>
+</body>
+</html>
+
